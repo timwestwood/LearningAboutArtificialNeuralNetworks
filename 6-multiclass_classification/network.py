@@ -57,6 +57,7 @@ class network:
         # This returns the derivative of the single-sample cross-entropy loss with respect to the PRE-softmax
         # output of the neurons in the output layer. Not only is it trivial to evaluate in its own right,
         # but it avoids having to evaluate the Jacobian of softmax.
+        # N.B. This expression depends on the true values having the usual 'one-hot' form.
         return predicted_val - true_val
     
 
