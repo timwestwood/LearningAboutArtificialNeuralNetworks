@@ -57,7 +57,7 @@ class network:
         # This returns the derivative of the single-sample cross-entropy loss with respect to the PRE-softmax
         # output of the neurons in the output layer. Not only is it trivial to evaluate in its own right,
         # but it avoids having to evaluate the Jacobian of softmax.
-        # N.B. This expression depends on the true values having the usual 'one-hot' form.
+        # N.B. This expression depends on the true values having the usual 'one-hot' form (well technically only that they are arrays of values summing to 1 -- the point is that they can't be e.g. integer labels).
         return predicted_val - true_val
     
 
@@ -108,7 +108,7 @@ class network:
                         self.out.neurons[m].weights[k] -= f_prime[m] * self.out.neurons[m].output_deriv(h[-1], k) # = learning_rate * d_L_d_pre-softmax-prediction * d_pre-softmax-prediction_d_wk
 
                 # 'Interior' hidden layer variables:
-                delta = np.zeros((self.layers[-1].num_neurons, self.out.num_neurons))
+                delta = np.zeros((self.layers[-1].num_neurons, 1))
 
                 for m in range(self.out.num_neurons):
                     for k in range(self.layers[-1].num_neurons):
