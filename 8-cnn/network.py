@@ -32,9 +32,15 @@ class network:
 
     @staticmethod
     def loss(predicted_vals, true_vals):
-        # The total cross-entropy loss.
+        # The mean cross-entropy loss.
         predicted_vals = np.clip(predicted_vals, 1e-10, 1.0 - 1e-10) # Avoid taking the logarithm of 0.
-        return -np.sum(true_vals * np.log(predicted_vals)) # Element-wise multiplication.
+        loss = -np.mean(np.sum(true_vals * np.log(predicted_vals), axis=1)) # Element-wise multiplication.
+
+        pv_ids = np.argmax(predicted_vals, axis=1)
+        tv_ids = np.argmax(true_vals, axis=1)
+        acc = np.sum(pv_ids == tv_ids)/pv_ids.size
+
+        return loss, acc # Element-wise multiplication.
 
     @staticmethod
     def loss_deriv(predicted_val, true_val):
@@ -49,22 +55,20 @@ class network:
 
     
 
-    def train(self, data, true_vals):
+    def print_losses(self, epoch, train_true_vals, train_predicted_vals, test_data, test_true_vals, test_predicted_vals):
 
-        # true_vals has size num_samples-by-10, and data has size num_samples-by-28x28.
+        # Assumes the predicted values for the training data have already been calculated and stored in train_predicted_vals.
+    
+        train_loss, train_acc = self.loss(train_predicted_vals, train_true_vals)
 
-        epochs = 4
-        learning_rate = 0.001
+        for n in range(test_true_vals.shape[0]):
+            test_predicted_vals[n, :] = self.output(test_data[n])
 
-        predicted_vals = np.zeros(true_vals.shape)
+        test_loss, test_acc = self.loss(test_predicted_vals, test_true_vals)
 
-        # Find the initial loss
-        for n in range(true_vals.shape[0]):
-            predicted_vals[n, :] = self.output(data[n])
-
-        curr_loss = self.loss(predicted_vals, true_vals)
-        print("epoch:", 0," loss =", curr_loss)
-        plt.plot(0, curr_loss, 'ko')
+        print('epoch: %d | training loss = %.3f, training accuracy = %.1f%% | test loss = %.3f, test accuracy = %.1f%%' % (epoch, train_loss, train_acc*100, test_loss, test_acc*100))
+        plt.plot(epoch, train_loss, 'ko')
+        plt.plot(epoch, test_loss, 'bo')
         ax = plt.gca()
         ax.set_yscale('log')
         plt.xlabel("Epoch")
@@ -72,22 +76,42 @@ class network:
         plt.show(block=False)
         plt.pause(0.001)
 
+
+
+
+
+
+
+    def train(self, train_data, train_true_vals, test_data, test_true_vals):
+
+        epochs = 10
+        learning_rate = 0.0005
+
+        train_predicted_vals = np.zeros(train_true_vals.shape)
+        test_predicted_vals = np.zeros(test_true_vals.shape)
+
+        # Find the initial losses
+        for n in range(train_true_vals.shape[0]):
+            train_predicted_vals[n, :] = self.output(train_data[n])
+
+        self.print_losses(0, train_true_vals, train_predicted_vals, test_data, test_true_vals, test_predicted_vals)
+
         for epoch in range(epochs):
 
             # Stochastic gradient descent
             gen = np.random.default_rng()
-            for n in gen.permutation(true_vals.shape[0]):
+            for n in gen.permutation(train_true_vals.shape[0]):
 
-                I = data[n]
+                I = train_data[n]
 
                 ## Feed forward:
                 h0 = self.l0.output(I)
                 h1 = self.l1.output(h0)
                 h1f = h1.flatten()
-                predicted_vals[n, :] = self.l2.output(h1f) # = self.output(I), but we've cached the layer calculations.
+                train_predicted_vals[n, :] = self.l2.output(h1f) # = self.output(I), but we've cached the layer calculations.
 
                 ## Back propogate:
-                f_prime = learning_rate * self.loss_deriv(predicted_vals[n, :], true_vals[n, :]) # = learning_rate * d_L_d_pre-softmax-prediction
+                f_prime = learning_rate * self.loss_deriv(train_predicted_vals[n, :], train_true_vals[n, :]) # = learning_rate * d_L_d_pre-softmax-prediction
 
                 # Output layer variables:
                 for m in range(self.l2.num_nodes):
@@ -113,17 +137,8 @@ class network:
                 self.l0.backprop(I, d_L_d_h0)
 
             # Evaluate the new loss
-            curr_loss = self.loss(predicted_vals, true_vals)
-            print("epoch:", epoch+1," loss =", curr_loss)
-            plt.plot(epoch+1, curr_loss, 'ko')
-            ax = plt.gca()
-            ax.set_yscale('log')
-            plt.xlabel("Epoch")
-            plt.ylabel("Loss")
-            plt.show(block=False)
-            plt.pause(0.001)
+            self.print_losses(epoch+1, train_true_vals, train_predicted_vals, test_data, test_true_vals, test_predicted_vals)
 
-        
 
 
 

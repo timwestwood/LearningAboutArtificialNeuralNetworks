@@ -12,11 +12,8 @@ test_labels = to_categorical(mnist.test_labels())
 training_ims = (training_ims / 255) - 0.5
 test_ims = (test_ims / 255) - 0.5
 
-# Train the network
+# Train and test the network
 cnn = network()
-cnn.train(training_ims[0:1000], training_labels[0:1000]) # Use a subset of the available training data because this is going to be slow...
-
-# Test the trained network
-print("Test output: ", cnn.output(test_ims[0]), "(should be close to", test_labels[0], ")")
+cnn.train(training_ims[0:1000], training_labels[0:1000], test_ims[0:1000], test_labels[0:1000]) # Use a subset of the available training data because this is going to be slow...
 
 plt.show()
