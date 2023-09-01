@@ -55,9 +55,13 @@ class network:
 
     
 
-    def print_losses(self, epoch, train_true_vals, train_predicted_vals, test_data, test_true_vals, test_predicted_vals):
+    def print_losses(self, epoch, train_true_vals, train_data, test_true_vals, test_data):
 
-        # Assumes the predicted values for the training data have already been calculated and stored in train_predicted_vals.
+        train_predicted_vals = np.zeros(train_true_vals.shape)
+        test_predicted_vals = np.zeros(test_true_vals.shape)
+
+        for n in range(train_true_vals.shape[0]):
+            train_predicted_vals[n, :] = self.output(train_data[n])
     
         train_loss, train_acc = self.loss(train_predicted_vals, train_true_vals)
 
@@ -87,14 +91,7 @@ class network:
         epochs = 10
         learning_rate = 0.0005
 
-        train_predicted_vals = np.zeros(train_true_vals.shape)
-        test_predicted_vals = np.zeros(test_true_vals.shape)
-
-        # Find the initial losses
-        for n in range(train_true_vals.shape[0]):
-            train_predicted_vals[n, :] = self.output(train_data[n])
-
-        self.print_losses(0, train_true_vals, train_predicted_vals, test_data, test_true_vals, test_predicted_vals)
+        self.print_losses(0, train_true_vals, train_data, test_true_vals, test_data)
 
         for epoch in range(epochs):
 
@@ -108,10 +105,10 @@ class network:
                 h0 = self.l0.output(I)
                 h1 = self.l1.output(h0)
                 h1f = h1.flatten()
-                train_predicted_vals[n, :] = self.l2.output(h1f) # = self.output(I), but we've cached the layer calculations.
+                predicted_val = self.l2.output(h1f) # = self.output(I), but we've cached the layer calculations.
 
                 ## Back propogate:
-                f_prime = learning_rate * self.loss_deriv(train_predicted_vals[n, :], train_true_vals[n, :]) # = learning_rate * d_L_d_pre-softmax-prediction
+                f_prime = learning_rate * self.loss_deriv(predicted_val, train_true_vals[n, :]) # = learning_rate * d_L_d_pre-softmax-prediction
 
                 # Output layer variables:
                 for m in range(self.l2.num_nodes):
@@ -137,7 +134,7 @@ class network:
                 self.l0.backprop(I, d_L_d_h0)
 
             # Evaluate the new loss
-            self.print_losses(epoch+1, train_true_vals, train_predicted_vals, test_data, test_true_vals, test_predicted_vals)
+            self.print_losses(epoch+1, train_true_vals, train_data, test_true_vals, test_data)
 
 
 
