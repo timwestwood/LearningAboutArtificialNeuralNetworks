@@ -31,19 +31,19 @@ class dense_layer(ABC):
     def backprop(self, input, d_L_d_output):
         
         # Update weights
-        a_prime = self.activation_deriv(self.weighted_combination(input))
+        a_prime = self.activation_deriv(self.weighted_combination(input)) * d_L_d_output
 
         for n in range(self.num_neurons):
-            self.neurons[n].bias -= d_L_d_output[n]
+            self.neurons[n].bias -= a_prime[n]
             for k in range(self.neurons[n].weights.size):
-                self.neurons[n].weights[k] -= d_L_d_output[n] * a_prime[n] * self.neurons[n].output_deriv(input, k)
+                self.neurons[n].weights[k] -= a_prime[n] * self.neurons[n].output_deriv(input, k)
 
         # Produce derivatives to propogate backwards
         d_L_d_input = np.zeros(input.shape)
 
         for n in range(input.size):
             for k in range(self.num_neurons):
-                d_L_d_input[n] = d_L_d_output[k] * a_prime[k] * self.neurons[k].output_deriv(input, n + input.size)
+                d_L_d_input[n] += a_prime[k] * self.neurons[k].output_deriv(input, n + input.size)
 
         return d_L_d_input
     
